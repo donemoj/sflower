@@ -1,78 +1,103 @@
-let water = 0; // Amount of water (your interactions)
-let sunlight = 0; // Amount of sunlight (their interactions)
-let flowerHealth = 100; // Flower's health (starts full)
-let lastInteraction = 0; // Time of the last interaction (in milliseconds)
-let maxHealth = 100; // Maximum health for the flower
-let minHealth = 20; // Minimum health for the flower before it wilts
-let wiltingRate = 0.1; // Rate at which the flower wilts per second without interaction
-let bloomEffect = 0; // Track bloom effect
+let water = 0; // Your interactions
+let sunlight = 0; // Their interactions
+let flowerHealth = 100; // Flower's health
+let lastInteraction = 0;
+let maxHealth = 100;
+let minHealth = 20;
+let wiltingRate = 0.1;
+let bloomEffect = 0;
 
 function setup() {
-    createCanvas(400, 400);
-    lastInteraction = millis(); // Set the initial time
+    createCanvas(400, 400, WEBGL);
+    lastInteraction = millis(); // Initialize timer
 }
 
 function draw() {
-    background(255);
+    background(230); // Soft gray background
 
-    // Check if it's time to reduce the flower's health
-    let timeSinceLastInteraction = (millis() - lastInteraction) / 1000; // in seconds
+    // Smooth camera positioning
+    rotateX(PI / 3);
+    translate(0, 50, 0);
+    scale(2.5);
+
+    // Update health based on time
+    let timeSinceLastInteraction = (millis() - lastInteraction) / 1000;
     flowerHealth -= wiltingRate * timeSinceLastInteraction;
+    flowerHealth = constrain(flowerHealth, minHealth, maxHealth);
 
-    // Make sure flower health doesn't go below minimum
-    flowerHealth = max(flowerHealth, minHealth);
+    // Bloom effect changes flower size
+    let bloomSize = map(flowerHealth, minHealth, maxHealth, 0.6, 1.2);
 
-    // Update flower health based on water and sunlight
-    flowerHealth = map(water + sunlight, 0, 200, minHealth, maxHealth);
+    // Draw flower with bloom effect
+    drawStem();
+    drawFlower(0, -70, bloomSize);
 
-    // Update flower's bloom effect based on interactions
-    let bloomSize = bloomEffect > 0 ? map(bloomEffect, 0, 20, 1, 1.5) : 1; // Bloom animation
-    bloomEffect -= 0.1; // Gradually reduce the bloom effect
-
-    // Draw flower
-    drawFlower(width / 2, height / 2, bloomSize);
-
-    // Show health information
+    // Display stats
+    resetMatrix();
+    textSize(14);
     fill(0);
-    textSize(16);
-    text(`Water: ${water}`, 10, height - 40);
-    text(`Sunlight: ${sunlight}`, 10, height - 20);
-    text(`Flower Health: ${Math.round(flowerHealth)}%`, 10, height - 60);
+    text(`Water: ${water}`, -180, 170);
+    text(`Sunlight: ${sunlight}`, -180, 185);
+    text(`Health: ${Math.round(flowerHealth)}%`, -180, 200);
+}
+
+function drawStem() {
+    push();
+    fill(30, 120, 40);
+    translate(0, 30, 0);
+    cylinder(10, 100);
+    pop();
 }
 
 function drawFlower(x, y, bloomSize) {
-    let petalSize = map(flowerHealth, minHealth, maxHealth, 10, 60);
+    push();
+    translate(x, y, 0);
+    scale(bloomSize);
 
-    noStroke();
-    fill(255, 0, 0); // Red petals
-    ellipse(x, y - 20, petalSize * bloomSize, petalSize * bloomSize * 2); // Top petal
-    ellipse(x, y + 20, petalSize * bloomSize, petalSize * bloomSize * 2); // Bottom petal
-    ellipse(x - 20, y, petalSize * bloomSize, petalSize * bloomSize * 2); // Left petal
-    ellipse(x + 20, y, petalSize * bloomSize, petalSize * bloomSize * 2); // Right petal
+    // 🌸 Draw 6 petals in a circular pattern
+    for (let i = 0; i < 6; i++) {
+        push();
+        rotateY(TWO_PI * (i / 6));  // Spread evenly around the center
+        translate(15, -10, 5); // Adjust petal placement
+        drawPetal();
+        pop();
+    }
 
-    // Draw flower center
-    fill(255, 204, 0); // Yellow center
-    ellipse(x, y, 40, 40);
+    // 🌞 Draw center of the flower
+    fill(255, 204, 0);
+    sphere(15); // Yellow sphere in the middle
+
+    pop();
 }
 
-// Functions to handle water and sunlight interactions
+function drawPetal() {
+    fill(220, 20, 60); // Deep red petals
+    push();
+    rotateX(HALF_PI / 1.5); // Adjust petal orientation
+    rotateZ(HALF_PI / 3);
+    scale(1, 1.5, 0.2);
+    sphere(15, 8, 8); // Smoother petal with a sphere-like shape
+    pop();
+}
+
+
+// Interaction handlers
 function waterFlower() {
     water++;
     lastInteraction = millis();
-    bloomEffect = 20; // Trigger bloom animation on water
+    flowerHealth = min(flowerHealth + 5, maxHealth);
 }
 
 function sunlightFlower() {
     sunlight++;
     lastInteraction = millis();
-    bloomEffect = 20; // Trigger bloom animation on sunlight
+    flowerHealth = min(flowerHealth + 5, maxHealth);
 }
 
-// Trigger interactions based on mouse clicks
 function mousePressed() {
     if (mouseX > width / 2) {
-        sunlightFlower(); // Trigger sunlight interaction on right side of the canvas
+        sunlightFlower();
     } else {
-        waterFlower(); // Trigger water interaction on left side of the canvas
+        waterFlower();
     }
 }
